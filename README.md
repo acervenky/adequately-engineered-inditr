@@ -29,6 +29,10 @@
 
 ---
 
+![IndITR Portal](assets/inditr_portal.png)
+
+---
+
 ## 📖 Background
 
 Every year, around the third week of July, the same panic sets in across millions of Indian households.
