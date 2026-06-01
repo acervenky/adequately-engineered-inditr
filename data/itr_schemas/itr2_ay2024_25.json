@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ITR-2 AY 2024-25 Schema",
+  "description": "Simplified ITR-2 schema for AY 2024-25 validation",
+  "type": "object",
+  "required": ["AssessmentYear", "Form", "PersonalInfo", "IncomeDetails", "TaxComputation"],
+  "properties": {
+    "AssessmentYear": {"type": "string"},
+    "Form": {"type": "string", "enum": ["ITR-2"]},
+    "PersonalInfo": {
+      "type": "object",
+      "required": ["Name", "PAN", "DOB"],
+      "properties": {
+        "Name": {"type": "string"},
+        "PAN": {"type": "string", "pattern": "^[A-Z]{5}[0-9]{4}[A-Z]$|^XXXXX[0-9]{4}X$"},
+        "DOB": {"type": "string"},
+        "ResidentialStatus": {"type": "string"}
+      }
+    },
+    "IncomeDetails": {
+      "type": "object",
+      "properties": {
+        "GrossSalary": {"type": "number", "minimum": 0},
+        "StandardDeduction": {"type": "number", "minimum": 0},
+        "NetSalary": {"type": "number", "minimum": 0},
+        "HousePropertyIncome": {"type": "number"},
+        "CapitalGains": {
+          "type": "object",
+          "properties": {
+            "STCGEquity": {"type": "number"},
+            "LTCGEquity": {"type": "number"},
+            "STCGOther": {"type": "number"},
+            "LTCGOther": {"type": "number"},
+            "TotalSTCG": {"type": "number"},
+            "TotalLTCG": {"type": "number"}
+          }
+        },
+        "OtherIncome": {"type": "number"},
+        "GrossIncome": {"type": "number", "minimum": 0}
+      }
+    },
+    "Deductions": {
+      "type": "object",
+      "properties": {
+        "Sec80C": {"type": "number", "minimum": 0, "maximum": 150000},
+        "Sec80D": {"type": "number", "minimum": 0},
+        "Sec80TTA": {"type": "number", "minimum": 0, "maximum": 10000},
+        "Sec80CCD1B": {"type": "number", "minimum": 0, "maximum": 50000},
+        "HRAExemption": {"type": "number", "minimum": 0},
+        "TotalDeductions": {"type": "number", "minimum": 0}
+      }
+    },
+    "TaxComputation": {
+      "type": "object",
+      "required": ["RecommendedRegime", "TotalTaxLiability"],
+      "properties": {
+        "RecommendedRegime": {"type": "string", "enum": ["old", "new"]},
+        "TaxableIncome": {"type": "number", "minimum": 0},
+        "IncomeTax": {"type": "number", "minimum": 0},
+        "CapitalGainsTax": {"type": "number", "minimum": 0},
+        "Surcharge": {"type": "number", "minimum": 0},
+        "HealthEducationCess": {"type": "number", "minimum": 0},
+        "Rebate87A": {"type": "number", "minimum": 0},
+        "TotalTaxLiability": {"type": "number", "minimum": 0},
+        "TDSPaid": {"type": "number", "minimum": 0},
+        "NetPayable": {"type": "number"}
+      }
+    },
+    "Disclaimer": {"type": "string"}
+  }
+}

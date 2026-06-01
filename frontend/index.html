@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>IndITR — Tax Filing Agent</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:         #f0eee9;
+    --surface:    #ffffff;
+    --surface2:   #f7f6f2;
+    --border:     #e6e3dc;
+    --border-soft:#eeece7;
+
+    --ink:        #0e0f0c;
+    --ink-mid:    #3a3b38;
+    --ink-dim:    #6b6b67;
+    --ink-muted:  #9e9e9a;
+
+    --green:      #1b5e3f;
+    --green-mid:  #2d7a55;
+    --green-bg:   #edf5f0;
+    --green-border:#b6d9c7;
+
+    --amber-text: #7c4d0a;
+    --amber-bg:   #fef8ee;
+    --amber-border:#f5d99a;
+
+    --red-text:   #8b1a1a;
+    --red-bg:     #fff0f0;
+    --red-border: #f5b0b0;
+
+    --r-xs:   5px;
+    --r-sm:   9px;
+    --r:      13px;
+    --r-lg:   18px;
+    --r-full: 999px;
+
+    --shadow-xs: 0 1px 2px rgba(14,15,12,0.05);
+    --shadow-sm: 0 1px 3px rgba(14,15,12,0.07), 0 2px 8px rgba(14,15,12,0.04);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    font-size: 14px;
+  }
+
+  /* ── Topbar ── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 48px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .topbar-logo {
+    width: 236px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 0 18px;
+    border-right: 1px solid var(--border);
+    height: 100%;
+  }
+  .logo-mark {
+    width: 26px; height: 26px;
+    background: var(--ink);
+    border-radius: var(--r-xs);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 13px; font-weight: 700; font-style: italic;
+    letter-spacing: -0.5px;
+  }
+  .logo-name { font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -0.3px; }
+  .logo-ay   { font-size: 10.5px; color: var(--ink-muted); margin-left: 2px; font-weight: 500; }
+
+  .topbar-breadcrumb {
+    flex: 1;
+    padding: 0 24px;
+    font-size: 12px;
+    color: var(--ink-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .topbar-breadcrumb span { color: var(--ink-mid); font-weight: 500; }
+
+  /* connection dot */
+  .conn-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--border);
+    margin-left: 4px;
+    transition: background 0.3s;
+  }
+  .conn-dot.connected    { background: var(--green); }
+  .conn-dot.connecting   { background: var(--amber-text); }
+  .conn-dot.error        { background: #c0392b; }
+
+  .topbar-actions {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 18px;
+  }
+  .tb-btn {
+    font-size: 12px; font-weight: 500;
+    padding: 5px 12px;
+    border-radius: var(--r-full);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--ink-dim);
+    cursor: pointer;
+    transition: all 0.1s;
+    font-family: inherit;
+  }
+  .tb-btn:hover { border-color: var(--ink-dim); color: var(--ink); }
+  .tb-btn.primary {
+    background: var(--green); color: white; border-color: var(--green);
+  }
+  .tb-btn.primary:hover { background: var(--green-mid); border-color: var(--green-mid); }
+
+  /* ── Layout ── */
+  .layout { display: flex; flex: 1; overflow: hidden; }
+
+  /* ── Left sidebar ── */
+  .sidebar {
+    width: 236px; flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    overflow-y: auto;
+    scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+  }
+
+  .s-section { padding: 16px 16px 14px; border-bottom: 1px solid var(--border-soft); }
+  .s-label {
+    font-size: 9.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--ink-muted);
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .s-label-right { font-weight: 500; color: var(--ink-muted); }
+
+  .progress-bar {
+    height: 3px; background: var(--border);
+    border-radius: var(--r-full);
+    margin-bottom: 12px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: var(--green);
+    border-radius: var(--r-full);
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+
+  .checklist { display: flex; flex-direction: column; gap: 2px; }
+  .cl-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 6px 8px;
+    border-radius: var(--r-sm);
+    font-size: 12.5px; color: var(--ink-muted);
+    transition: all 0.1s;
+  }
+  .cl-item.active { background: var(--green-bg); color: var(--green); font-weight: 600; }
+  .cl-item.done   { color: var(--ink-mid); }
+
+  .cl-radio {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 1.5px solid var(--border);
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--surface);
+  }
+  .cl-item.active .cl-radio { border-color: var(--green); background: var(--green); }
+  .cl-item.done   .cl-radio { border-color: var(--green); background: var(--green); }
+
+  /* estimate section */
+  .regime-mini { display: flex; flex-direction: column; gap: 5px; margin-top: 6px; }
+  .rm-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11.5px; color: var(--ink-dim);
+    padding: 5px 8px;
+    border-radius: var(--r-xs);
+    background: var(--surface2);
+    border: 1px solid var(--border-soft);
+  }
+  .rm-row.winner { background: var(--green-bg); border-color: var(--green-border); color: var(--green); }
+  .rm-row .rm-label { font-weight: 500; }
+  .rm-row .rm-val   { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .rm-save {
+    margin-top: 6px;
+    font-size: 11.5px; color: var(--green); font-weight: 600;
+    padding: 5px 8px;
+    background: var(--green-bg);
+    border-radius: var(--r-xs);
+    border: 1px solid var(--green-border);
+    text-align: center;
+  }
+  .estimate-placeholder {
+    font-size: 12px; color: var(--ink-muted); padding: 4px 0;
+    font-style: italic;
+  }
+
+  /* doc list in sidebar */
+  .doc-sidebar { display: flex; flex-direction: column; gap: 5px; }
+  .ds-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 8px;
+    border-radius: var(--r-xs);
+    font-size: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border-soft);
+  }
+  .ds-name { flex: 1; min-width: 0; color: var(--ink-mid); font-weight: 500;
+             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ds-tag {
+    font-size: 10px; font-weight: 700;
+    padding: 2px 6px; border-radius: var(--r-full);
+    flex-shrink: 0;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .ds-tag.ok   { background: var(--green-bg); color: var(--green); }
+  .ds-tag.warn { background: var(--amber-bg); color: var(--amber-text); }
+  .ds-tag.opt  { background: var(--surface); color: var(--ink-muted); border: 1px solid var(--border); }
+
+  .drop-zone {
+    margin-top: 8px;
+    padding: 9px;
+    border: 1.5px dashed var(--border);
+    border-radius: var(--r-sm);
+    text-align: center;
+    font-size: 11.5px; color: var(--ink-muted);
+    cursor: pointer; transition: all 0.12s;
+  }
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--green); color: var(--green); background: var(--green-bg);
+  }
+
+  .dl-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    text-decoration: none;
+    color: #334;
+    background: #f0f2f5;
+    border: 1px solid #dde0e8;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .dl-btn:hover { background: #e4e8f0; }
+  .dl-btn-primary {
+    background: #1565C0;
+    color: #fff;
+    border-color: #1565C0;
+  }
+  .dl-btn-primary:hover { background: #1251a3; }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 12px 16px;
+    font-size: 11.5px; color: var(--ink-muted);
+    border-top: 1px solid var(--border-soft);
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  /* ── Main area ── */
+  .main {
+    flex: 1; display: flex; flex-direction: column;
+    background: var(--bg); min-width: 0;
+  }
+
+  .messages {
+    flex: 1; overflow-y: auto;
+    padding: 32px 40px 20px;
+    display: flex; flex-direction: column;
+    gap: 28px;
+    scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+  }
+
+  /* agent turn */
+  .agent-turn { display: flex; flex-direction: column; gap: 14px; max-width: 660px; }
+
+  .agent-header {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .agent-av {
+    width: 32px; height: 32px;
+    background: var(--ink);
+    border-radius: var(--r-xs);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 14px; font-weight: 700; font-style: italic;
+    letter-spacing: -0.5px; flex-shrink: 0;
+  }
+  .agent-meta { font-size: 11.5px; color: var(--ink-muted); }
+
+  .agent-headline {
+    font-size: 28px; font-weight: 700; color: var(--ink);
+    line-height: 1.25; letter-spacing: -0.6px;
+  }
+  .agent-headline .accent { color: var(--green); }
+
+  .agent-body {
+    font-size: 14px; color: var(--ink-dim); line-height: 1.7;
+    max-width: 580px;
+  }
+  .agent-body strong { color: var(--ink-mid); font-weight: 600; }
+
+  .agent-bubble {
+    font-size: 14px; color: var(--ink-mid); line-height: 1.7;
+    padding: 13px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    border-top-left-radius: var(--r-xs);
+    box-shadow: var(--shadow-xs);
+    max-width: 620px;
+  }
+  .agent-bubble p { margin-bottom: 6px; }
+  .agent-bubble p:last-child { margin-bottom: 0; }
+  .agent-bubble strong { color: var(--ink); font-weight: 600; }
+  .agent-bubble ul { margin: 6px 0 6px 16px; }
+  .agent-bubble li { margin-bottom: 3px; }
+
+  /* user turn */
+  .user-turn {
+    align-self: flex-end;
+    max-width: 520px;
+  }
+  .user-bubble {
+    font-size: 14px; line-height: 1.65;
+    padding: 11px 16px;
+    background: var(--ink);
+    color: #f5f4f0;
+    border-radius: var(--r-lg);
+    border-top-right-radius: var(--r-xs);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* option cards */
+  .option-cards { display: flex; gap: 12px; flex-wrap: wrap; }
+  .opt-card {
+    flex: 1; min-width: 180px; max-width: 280px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--r);
+    cursor: pointer;
+    transition: all 0.12s;
+    box-shadow: var(--shadow-xs);
+    position: relative;
+  }
+  .opt-card:hover { border-color: var(--ink-dim); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+  .opt-card.recommended { border-color: var(--green); }
+  .opt-card.disabled { opacity: 0.5; cursor: not-allowed; }
+  .opt-card.disabled:hover { transform: none; border-color: var(--border); box-shadow: var(--shadow-xs); }
+  .opt-card-badge {
+    position: absolute; top: -1px; right: 12px;
+    font-size: 9px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    padding: 3px 8px;
+    background: var(--green); color: white;
+    border-radius: 0 0 var(--r-xs) var(--r-xs);
+  }
+  .opt-card-icon {
+    width: 28px; height: 28px;
+    border-radius: var(--r-xs);
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 10px;
+  }
+  .opt-card-title { font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 5px; }
+  .opt-card-desc  { font-size: 12px; color: var(--ink-dim); line-height: 1.55; }
+  .opt-card-tag   { margin-top: 10px; font-size: 11px; color: var(--green); display: flex; align-items: center; gap: 4px; }
+
+  /* inline doc card */
+  .doc-card {
+    margin-top: 8px;
+    padding: 9px 13px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .dc-icon {
+    width: 28px; height: 28px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--r-xs);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .dc-info { flex: 1; min-width: 0; }
+  .dc-name { font-size: 12.5px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dc-sub  { font-size: 11px; color: var(--ink-muted); margin-top: 1px; }
+  .dc-tag  {
+    font-size: 10px; font-weight: 700; flex-shrink: 0;
+    padding: 2px 8px; border-radius: var(--r-full);
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .t-ok   { background: var(--green-bg);  color: var(--green); }
+  .t-warn { background: var(--amber-bg);  color: var(--amber-text); }
+  .t-err  { background: var(--red-bg);    color: var(--red-text); }
+
+  /* chips */
+  .chips { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 12px; }
+  .chip {
+    font-size: 13px; font-weight: 500;
+    padding: 6px 14px;
+    border-radius: var(--r-full);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink-mid);
+    cursor: pointer; transition: all 0.1s;
+    box-shadow: var(--shadow-xs);
+    font-family: inherit;
+  }
+  .chip:hover { border-color: var(--green); color: var(--green); background: var(--green-bg); }
+  .chip:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* trust line */
+  .trust-line {
+    font-size: 11.5px; color: var(--ink-muted);
+    display: flex; align-items: center; gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .trust-sep { width: 3px; height: 3px; border-radius: 50%; background: var(--border); }
+
+  /* typing indicator */
+  .typing-indicator {
+    display: flex; align-items: center; gap: 5px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    border-top-left-radius: var(--r-xs);
+    box-shadow: var(--shadow-xs);
+    width: fit-content;
+  }
+  .typing-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--ink-muted);
+    animation: typingBounce 1.2s infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typingBounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-5px); opacity: 1; }
+  }
+
+  /* file upload progress */
+  .upload-progress {
+    margin-top: 6px;
+    height: 2px; background: var(--border);
+    border-radius: var(--r-full); overflow: hidden;
+  }
+  .upload-fill {
+    height: 100%; background: var(--green);
+    border-radius: var(--r-full);
+    animation: uploadSlide 1.5s ease infinite;
+  }
+  @keyframes uploadSlide {
+    0% { width: 0; margin-left: 0; }
+    50% { width: 60%; margin-left: 20%; }
+    100% { width: 0; margin-left: 100%; }
+  }
+
+  /* ── Input bar ── */
+  .input-bar {
+    padding: 12px 40px 18px;
+    background: var(--bg);
+    border-top: 1px solid var(--border-soft);
+  }
+  .input-wrap {
+    display: flex; align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 0 16px; gap: 10px;
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.12s, box-shadow 0.12s;
+  }
+  .input-wrap:focus-within {
+    border-color: var(--ink-dim);
+    box-shadow: 0 0 0 3px rgba(14,15,12,0.06);
+  }
+  .input-wrap textarea {
+    flex: 1; background: none; border: none; outline: none;
+    color: var(--ink); font-size: 13.5px; line-height: 1.5;
+    resize: none; padding: 12px 0; font-family: inherit; max-height: 90px;
+  }
+  .input-wrap textarea::placeholder { color: var(--ink-muted); }
+  .attach-btn {
+    background: none; border: none; color: var(--ink-muted);
+    cursor: pointer; padding: 4px; display: flex; align-items: center;
+    transition: color 0.1s; flex-shrink: 0;
+  }
+  .attach-btn:hover { color: var(--ink); }
+  .send-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--ink); border: none; color: white;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: background 0.1s;
+    box-shadow: var(--shadow-xs);
+  }
+  .send-btn:hover { background: var(--green); }
+  .send-btn:disabled { background: var(--border); cursor: not-allowed; }
+
+  .input-actions {
+    display: flex; align-items: center; gap: 16px;
+    padding: 7px 6px 0;
+    font-size: 12px; color: var(--ink-muted);
+  }
+  .ia-btn {
+    display: flex; align-items: center; gap: 5px;
+    cursor: pointer; transition: color 0.1s;
+    background: none; border: none; font-family: inherit;
+    font-size: 12px; color: var(--ink-muted); padding: 0;
+  }
+  .ia-btn:hover { color: var(--ink-dim); }
+
+  /* error banner */
+  .error-banner {
+    margin: 0 40px 8px;
+    padding: 8px 14px;
+    background: var(--red-bg);
+    border: 1px solid var(--red-border);
+    border-radius: var(--r-sm);
+    font-size: 12.5px;
+    color: var(--red-text);
+    display: none;
+  }
+  .error-banner.visible { display: block; }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- Hidden file input -->
+<input type="file" id="fileInput" accept=".pdf,.xlsx,.xls,.csv,.png,.jpg,.jpeg" multiple style="display:none" />
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-logo">
+    <div class="logo-mark">i</div>
+    <span class="logo-name">inditr</span>
+    <span class="logo-ay">AY26-27</span>
+  </div>
+  <div class="topbar-breadcrumb">
+    Returns
+    <span style="color:var(--border)">›</span>
+    <span id="sessionLabel">New · AY 2026–27</span>
+    <div class="conn-dot connecting" id="connDot" title="Connecting…"></div>
+  </div>
+  <div class="topbar-actions">
+    <button class="tb-btn" onclick="newSession()">+ New session</button>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+
+    <div class="s-section">
+      <div class="s-label">
+        Filing Checklist
+        <span class="s-label-right" id="checklistProgress">0 OF 7</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="checklist" id="checklist">
+        <!-- rendered by JS -->
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-label">Estimate (live)</div>
+      <div id="estimateArea">
+        <div class="estimate-placeholder">Calculating after you share your data…</div>
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-label">
+        Documents
+        <span class="s-label-right" id="docCount">0</span>
+      </div>
+      <div class="doc-sidebar" id="docSidebar"></div>
+      <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        + Drop or browse files
+      </div>
+    </div>
+
+    <div class="s-section" id="downloadSection" style="display:none">
+      <div class="s-label">Downloads</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px">
+        <a id="dlPdf" href="#" class="dl-btn" onclick="return triggerDownload('pdf')">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style="flex-shrink:0"><path d="M2 10h9M6.5 1v7M3.5 5l3 3 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          PDF Summary &amp; Filing Guide
+        </a>
+        <a id="dlJson" href="#" class="dl-btn" onclick="return triggerDownload('itr-json')">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style="flex-shrink:0"><path d="M2 10h9M6.5 1v7M3.5 5l3 3 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          ITR JSON (record)
+        </a>
+        <a id="dlJsonOfficial" href="#" class="dl-btn dl-btn-primary" onclick="return triggerDownload('itr-json-official')">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style="flex-shrink:0"><path d="M2 10h9M6.5 1v7M3.5 5l3 3 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          ITR JSON (IT Dept — for portal)
+        </a>
+      </div>
+      <div style="font-size:10px;color:#888;margin-top:6px;line-height:1.4">
+        Verify all values in the official offline utility before submitting.
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1"/>
+        <path d="M6 3.5v3l2 1" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+      </svg>
+      <span id="footerStatus">Session saved automatically</span>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="messages" id="messages">
+      <!-- Opening agent message — static welcome screen -->
+      <div class="agent-turn" id="welcomeBlock">
+        <div class="agent-header">
+          <div class="agent-av">i</div>
+          <span class="agent-meta">IndITR · Tax Filing Agent</span>
+        </div>
+        <div class="agent-headline">
+          Hi — I'm your <span class="accent">tax agent.</span><br>
+          Let's file your AY 26–27 return together.
+        </div>
+        <div class="agent-body">
+          I work fastest when I can read your data directly. Most people finish in under <strong>12 minutes</strong>. How would you like to start?
+        </div>
+        <div class="option-cards">
+          <div class="opt-card disabled" title="DigiLocker integration coming soon" onclick="digilockerClick()">
+            <div class="opt-card-badge">Recommended</div>
+            <div class="opt-card-icon">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle cx="7" cy="7" r="5.5" stroke="#1b5e3f" stroke-width="1.3"/>
+                <path d="M4.5 7l2 2 3-3" stroke="#1b5e3f" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="opt-card-title">Connect with incometax.gov.in</div>
+            <div class="opt-card-desc">Fetch your AIS, Form 26AS, Form 16 and TIS in a single sign-in. Everything else gets pre-filled.</div>
+            <div class="opt-card-tag">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4" stroke="currentColor" stroke-width="1"/><path d="M5 3v2.5l1.5 1" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+              Coming soon · OAuth via DigiLocker
+            </div>
+          </div>
+          <div class="opt-card" onclick="uploadClick()">
+            <div class="opt-card-icon">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <rect x="2" y="1" width="9" height="12" rx="1.5" stroke="#9e9e9a" stroke-width="1.2"/>
+                <path d="M4.5 5h5M4.5 7.5h5M4.5 10h3" stroke="#9e9e9a" stroke-width="1" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="opt-card-title">Upload my own documents</div>
+            <div class="opt-card-desc">Drop your Form 16, bank statements, capital gains reports. I'll extract everything line-by-line.</div>
+            <div class="opt-card-tag" style="color:var(--ink-muted)">PDF, Excel, images supported</div>
+          </div>
+        </div>
+        <div class="trust-line">
+          <span>End-to-end encrypted</span>
+          <div class="trust-sep"></div>
+          <span>Nothing leaves your device until you file</span>
+          <div class="trust-sep"></div>
+          <span>Switch methods any time</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error banner -->
+    <div class="error-banner" id="errorBanner"></div>
+
+    <!-- Input -->
+    <div class="input-bar">
+      <div class="input-wrap">
+        <button class="attach-btn" id="attachBtn" title="Attach document" onclick="document.getElementById('fileInput').click()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M13.5 7.5L7.5 13.5C6 15 3.5 15 2 13.5S.5 10 2 8.5L8.5 2C9.5 1 11 1 12 2s1 2.5 0 3.5L5.5 12C5 12.5 4 12.5 3.5 12S3 10.5 3.5 10L9 4.5"
+              stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <textarea id="msgInput" rows="1"
+          placeholder="Or just type a question to get started…"
+          oninput="autoResize(this)"
+          onkeydown="handleKey(event)"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="handleSend()" disabled>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M6 10V2M2 6l4-4 4 4" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="input-actions">
+        <button class="ia-btn" onclick="insertForm()">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <rect x="1" y="1" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1"/>
+            <path d="M3.5 6h5M3.5 4h5M3.5 8h3" stroke="currentColor" stroke-width="0.9" stroke-linecap="round"/>
+          </svg>
+          Insert form
+        </button>
+        <button class="ia-btn" onclick="showCommands()">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          / Commands
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────────────
+// Empty string = relative URLs, so the app works behind the nginx proxy in
+// Docker (no CORS, no hardcoded host).  Override for local dev without Docker:
+//   const API = 'http://localhost:8000';
+const API = window.INDITR_API_BASE || '';
+
+// ── State ───────────────────────────────────────────────────────────────────
+let sessionId      = null;
+let currentAct     = 'collect_profile';
+let sidebarPollId  = null;
+let typingEl       = null;
+let isBusy         = false;
+let docsInSidebar  = [];
+
+const STEPS = [
+  'Verify your identity',
+  'Bring in your data',
+  'Pick the right ITR form',
+  'Confirm income sources',
+  'Add deductions',
+  'Choose regime',
+  'Review & e-file',
+];
+
+const ACT_TO_STEP = {
+  collect_profile:        0,
+  identify_income_sources:1,
+  determine_itr_form:     2,
+  build_doc_checklist:    2,
+  request_documents:      3,
+  parse_documents:        3,
+  validate_extractions:   3,
+  human_doc_review:       3,
+  gap_fill_chat:          4,
+  cross_check:            4,
+  aggregate_data:         4,
+  compute_tax:            5,
+  build_outputs:          5,
+  tax_advisor:            5,
+  human_final_review:     6,
+  finalise:               6,
+};
+
+// ── DOM refs ─────────────────────────────────────────────────────────────────
+const messagesEl   = () => document.getElementById('messages');
+const msgInput     = () => document.getElementById('msgInput');
+const sendBtn      = () => document.getElementById('sendBtn');
+const connDot      = () => document.getElementById('connDot');
+const progressFill = () => document.getElementById('progressFill');
+const checklistEl  = () => document.getElementById('checklist');
+const progressLbl  = () => document.getElementById('checklistProgress');
+const estimateArea = () => document.getElementById('estimateArea');
+const docSidebar   = () => document.getElementById('docSidebar');
+const docCount     = () => document.getElementById('docCount');
+const dropZoneEl   = () => document.getElementById('dropZone');
+const errorBanner  = () => document.getElementById('errorBanner');
+const fileInput    = () => document.getElementById('fileInput');
+const footerStatus = () => document.getElementById('footerStatus');
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+(async function init() {
+  renderChecklist(0, -1);
+
+  msgInput().addEventListener('input', () => {
+    sendBtn().disabled = msgInput().value.trim() === '' || isBusy;
+  });
+
+  setConnState('connecting');
+
+  // Try to restore an existing session from localStorage
+  const savedId = localStorage.getItem('inditr_session_id');
+  if (savedId) {
+    try {
+      const res = await fetch(`${API}/session/${savedId}`);
+      if (!res.ok) throw new Error('session gone');
+      const data = await res.json();
+
+      sessionId = savedId;
+      currentAct = data.current_act || 'collect_profile';
+      setConnState('connected');
+      document.getElementById('sessionLabel').textContent =
+        `Session ${sessionId.slice(0,8)}… · AY 2026–27`;
+
+      // Re-render chat history
+      const msgs = data.messages || [];
+      msgs.forEach(msg => {
+        if (msg.role === 'assistant') renderAgentMessage(msg.content);
+        else if (msg.role === 'user')  appendUserBubble(msg.content);
+      });
+
+      if (msgs.length === 0) {
+        // Session exists but no messages yet — kick off collect_profile
+        await sendMessage('Hi');
+      }
+
+      updateChecklistFromAct(currentAct);
+      startSidebarPoll();
+      return;
+    } catch (_) {
+      // Session expired on server — clear and start fresh
+      localStorage.removeItem('inditr_session_id');
+    }
+  }
+
+  // No saved session — start a new one
+  try {
+    const res = await fetch(`${API}/session/start`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ assessment_year: 'AY2026-27' }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    sessionId  = data.session_id;
+    localStorage.setItem('inditr_session_id', sessionId);
+    setConnState('connected');
+    document.getElementById('sessionLabel').textContent =
+      `Session ${sessionId.slice(0,8)}… · AY 2026–27`;
+    startSidebarPoll();
+  } catch (e) {
+    setConnState('error');
+    showError(`Could not connect to IndITR API at ${API}. Start the server with: uvicorn inditr.api.main:app --reload`);
+  }
+})();
+
+// ── Connection helpers ───────────────────────────────────────────────────────
+function setConnState(state) {
+  const d = connDot();
+  d.className = 'conn-dot ' + state;
+  d.title = { connecting: 'Connecting…', connected: 'Connected', error: 'Disconnected' }[state] || state;
+}
+
+function showError(msg) {
+  const b = errorBanner();
+  b.textContent = msg;
+  b.classList.add('visible');
+  setTimeout(() => b.classList.remove('visible'), 8000);
+}
+
+// ── Sidebar ──────────────────────────────────────────────────────────────────
+function renderChecklist(doneUpTo, activeIdx) {
+  // doneUpTo = last completed step index (-1 = none)
+  // activeIdx = currently active step (-1 = none active)
+  const el = checklistEl();
+  el.innerHTML = '';
+  const checkSvg = `<svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+    <path d="M1.5 4l2 2L6.5 2.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+
+  STEPS.forEach((label, i) => {
+    const done   = i < activeIdx;
+    const active = i === activeIdx;
+    const div    = document.createElement('div');
+    div.className = 'cl-item' + (done ? ' done' : '') + (active ? ' active' : '');
+    div.innerHTML = `
+      <div class="cl-radio">${done ? checkSvg : ''}</div>
+      ${label}`;
+    el.appendChild(div);
+  });
+
+  const doneCount = Math.max(0, activeIdx);
+  progressLbl().textContent = `${doneCount} OF ${STEPS.length}`;
+  const pct = (doneCount / STEPS.length) * 100;
+  progressFill().style.width = pct + '%';
+}
+
+function updateChecklistFromAct(act) {
+  const stepIdx = ACT_TO_STEP[act] ?? 0;
+  renderChecklist(stepIdx, stepIdx);
+}
+
+function addDocToSidebar(filename, tag) {
+  // Avoid duplicates
+  if (docsInSidebar.includes(filename)) return;
+  docsInSidebar.push(filename);
+  docCount().textContent = docsInSidebar.length;
+
+  const tagClass = tag === 'Parsed' || tag === 'Confirmed' ? 'ok' :
+                   tag === 'Optional'                      ? 'opt' : 'warn';
+  const item = document.createElement('div');
+  item.className = 'ds-item';
+  const shortName = filename.length > 18 ? filename.slice(0, 16) + '…' : filename;
+  item.innerHTML = `
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <rect x="1.5" y="0.5" width="7.5" height="11" rx="1.2" stroke="#9e9e9a" stroke-width="1"/>
+      <path d="M3.5 4h5M3.5 6h5M3.5 8h3" stroke="#9e9e9a" stroke-width="0.9" stroke-linecap="round"/>
+    </svg>
+    <span class="ds-name" title="${escHtml(filename)}">${escHtml(shortName)}</span>
+    <span class="ds-tag ${tagClass}">${escHtml(tag)}</span>`;
+  docSidebar().appendChild(item);
+}
+
+function triggerDownload(type) {
+  if (!sessionId) { showError('No active session.'); return false; }
+  const url = `${API}/session/${sessionId}/download/${type}`;
+  const a = document.createElement('a');
+  a.href = url;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  return false;
+}
+
+function showDownloadSection() {
+  const sec = document.getElementById('downloadSection');
+  if (sec) sec.style.display = '';
+}
+
+function updateEstimate(oldTax, newTax, recommendation) {
+  const save  = Math.abs(oldTax - newTax);
+  const winner = recommendation === 'new' ? 'new' : 'old';
+  const fmt    = n => '₹' + n.toLocaleString('en-IN');
+  estimateArea().innerHTML = `
+    <div class="regime-mini">
+      <div class="rm-row ${winner === 'old' ? 'winner' : ''}">
+        <span class="rm-label">Old regime${winner === 'old' ? ' ★' : ''}</span>
+        <span class="rm-val">${fmt(oldTax)}</span>
+      </div>
+      <div class="rm-row ${winner === 'new' ? 'winner' : ''}">
+        <span class="rm-label">New regime${winner === 'new' ? ' ★' : ''}</span>
+        <span class="rm-val">${fmt(newTax)}</span>
+      </div>
+    </div>
+    <div class="rm-save">You save ${fmt(save)} with ${winner} regime</div>`;
+}
+
+function startSidebarPoll() {
+  if (sidebarPollId) clearInterval(sidebarPollId);
+  sidebarPollId = setInterval(pollSidebar, 3000);
+}
+
+async function pollSidebar() {
+  if (!sessionId) return;
+  try {
+    const [statusRes, outputRes] = await Promise.all([
+      fetch(`${API}/session/${sessionId}`),
+      fetch(`${API}/session/${sessionId}/outputs`),
+    ]);
+    if (statusRes.ok) {
+      const s = await statusRes.json();
+      if (s.current_act) {
+        currentAct = s.current_act;
+        updateChecklistFromAct(currentAct);
+      }
+      footerStatus().textContent = `Session saved · ${s.documents_uploaded} doc${s.documents_uploaded !== 1 ? 's' : ''}`;
+    }
+    if (outputRes.ok) {
+      const o = await outputRes.json();
+      if (o.ready) {
+        showDownloadSection();
+        if (o.regime_report) {
+          const rpt = o.regime_report;
+          if (rpt.old_tax !== undefined && rpt.new_tax !== undefined) {
+            updateEstimate(rpt.old_tax, rpt.new_tax, rpt.recommendation);
+          }
+        }
+      }
+    }
+  } catch (_) { /* silently ignore poll errors */ }
+}
+
+// ── Chat messages ─────────────────────────────────────────────────────────────
+function appendUserBubble(text) {
+  const turn = document.createElement('div');
+  turn.className = 'user-turn';
+  turn.innerHTML = `<div class="user-bubble">${escHtml(text)}</div>`;
+  messagesEl().appendChild(turn);
+  scrollBottom();
+}
+
+function appendAgentBubble(html, withHeader = false) {
+  const turn = document.createElement('div');
+  turn.className = 'agent-turn';
+  if (withHeader) {
+    turn.innerHTML = `
+      <div class="agent-header">
+        <div class="agent-av">i</div>
+        <span class="agent-meta">IndITR · Tax Filing Agent</span>
+      </div>`;
+  }
+  const bubble = document.createElement('div');
+  bubble.className = 'agent-bubble';
+  bubble.innerHTML = html;
+  turn.appendChild(bubble);
+  messagesEl().appendChild(turn);
+  scrollBottom();
+  return turn;
+}
+
+function appendChips(options, onSelect) {
+  const turn = document.createElement('div');
+  turn.className = 'agent-turn';
+  const chips = document.createElement('div');
+  chips.className = 'chips';
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'chip';
+    btn.textContent = opt;
+    btn.onclick = () => {
+      // Disable all chips in this set after selection
+      chips.querySelectorAll('.chip').forEach(c => c.disabled = true);
+      onSelect(opt);
+    };
+    chips.appendChild(btn);
+  });
+  turn.appendChild(chips);
+  messagesEl().appendChild(turn);
+  scrollBottom();
+}
+
+function appendDocMessage(filename, confidence, statusText, docType, parseErrors) {
+  const tag    = statusText.toLowerCase().includes('review') ? 't-warn' : 't-ok';
+  const sub    = parseErrors && parseErrors.length
+                 ? parseErrors.slice(0, 2).join(' · ')
+                 : `Confidence ${confidence}% · ${docType}`;
+  const turn   = document.createElement('div');
+  turn.className = 'agent-turn';
+  const bubble = document.createElement('div');
+  bubble.className = 'agent-bubble';
+  bubble.innerHTML = `
+    <p><strong>${escHtml(filename)}</strong> ${tag === 't-ok' ? 'parsed cleanly.' : 'parsed — please review.'}</p>
+    <div class="doc-card">
+      <div class="dc-icon">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <rect x="1.5" y="0.5" width="7.5" height="11" rx="1.2" stroke="#9e9e9a" stroke-width="1"/>
+          <path d="M3.5 4h5M3.5 6h5M3.5 8h3" stroke="#9e9e9a" stroke-width="0.9" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="dc-info">
+        <div class="dc-name">${escHtml(filename)}</div>
+        <div class="dc-sub">${escHtml(sub)}</div>
+      </div>
+      <span class="dc-tag ${tag}">${escHtml(statusText)}</span>
+    </div>`;
+  turn.appendChild(bubble);
+  messagesEl().appendChild(turn);
+  scrollBottom();
+}
+
+function showTypingIndicator() {
+  const turn = document.createElement('div');
+  turn.className = 'agent-turn';
+  turn.innerHTML = `
+    <div class="typing-indicator">
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    </div>`;
+  typingEl = turn;
+  messagesEl().appendChild(turn);
+  scrollBottom();
+}
+
+function hideTypingIndicator() {
+  if (typingEl) { typingEl.remove(); typingEl = null; }
+}
+
+function scrollBottom() {
+  const m = messagesEl();
+  m.scrollTop = m.scrollHeight;
+}
+
+// ── Send message ──────────────────────────────────────────────────────────────
+async function handleSend() {
+  const text = msgInput().value.trim();
+  if (!text || isBusy) return;
+  msgInput().value = '';
+  msgInput().style.height = 'auto';
+  sendBtn().disabled = true;
+  await sendMessage(text);
+}
+
+async function sendMessage(text) {
+  if (!sessionId) {
+    showError('Session not ready yet. Please wait a moment.');
+    return;
+  }
+  isBusy = true;
+  sendBtn().disabled = true;
+  appendUserBubble(text);
+  showTypingIndicator();
+
+  try {
+    const res = await fetch(`${API}/session/${sessionId}/message`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ message: text, role: 'user' }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    hideTypingIndicator();
+
+    if (data.current_act) {
+      currentAct = data.current_act;
+      updateChecklistFromAct(currentAct);
+    }
+
+    if (data.assistant_message) {
+      renderAgentMessage(data.assistant_message);
+    }
+  } catch (e) {
+    hideTypingIndicator();
+    appendAgentBubble(`<p>Something went wrong: <strong>${escHtml(e.message)}</strong>. Is the API server running?</p>`);
+  } finally {
+    isBusy = false;
+    sendBtn().disabled = msgInput().value.trim() === '';
+  }
+}
+
+// ── Lightweight markdown → HTML renderer ─────────────────────────────────────
+function mdToHtml(raw) {
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function inline(s) {
+    return esc(s)
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*([^*\n]+)\*/g, '<em>$1</em>')
+      .replace(/`([^`\n]+)`/g, '<code style="background:var(--surface2);padding:1px 4px;border-radius:3px;font-size:12px;font-family:monospace">$1</code>');
+  }
+
+  const lines = raw.split('\n');
+  let out = '';
+  let listType = null;
+  let tableRows = [];
+  let inCode = false, codeLines = [], codeLang = '';
+
+  const endList = () => { if (listType) { out += `</${listType}>`; listType = null; } };
+  const flushTable = () => {
+    if (!tableRows.length) return;
+    out += '<div style="overflow-x:auto;margin:8px 0"><table style="border-collapse:collapse;width:100%;font-size:13px">';
+    let isHeader = true;
+    for (const row of tableRows) {
+      if (row === null) { isHeader = false; continue; } // separator row
+      const tag = isHeader ? 'th' : 'td';
+      out += '<tr>';
+      row.forEach(cell => {
+        out += `<${tag} style="border:1px solid var(--border);padding:6px 10px;${isHeader?'background:var(--surface2);font-weight:600;':''}">${inline(cell)}</${tag}>`;
+      });
+      out += '</tr>';
+    }
+    out += '</table></div>';
+    tableRows = [];
+  };
+
+  for (const line of lines) {
+    const t = line.trim();
+
+    // Fenced code blocks
+    if (t.startsWith('```')) {
+      if (!inCode) {
+        endList(); flushTable();
+        inCode = true; codeLang = t.slice(3).trim(); codeLines = [];
+      } else {
+        const code = codeLines.join('\n');
+        // Skip JSON code blocks that leaked from backend (gap_fill data etc.)
+        if (!(codeLang === 'json' && code.includes('"gap_fill_complete"'))) {
+          out += `<pre style="background:var(--surface2);padding:10px;border-radius:var(--r-sm);overflow-x:auto;font-size:12px;margin:6px 0"><code>${esc(code)}</code></pre>`;
+        }
+        inCode = false; codeLines = [];
+      }
+      continue;
+    }
+    if (inCode) { codeLines.push(line); continue; }
+
+    // Table rows
+    if (t.startsWith('|') && t.includes('|', 1)) {
+      endList();
+      const cells = t.replace(/^\||\|$/g,'').split('|').map(c => c.trim());
+      tableRows.push(cells.every(c => /^:?-+:?$/.test(c)) ? null : cells);
+      continue;
+    } else if (tableRows.length) { flushTable(); }
+
+    // Empty line
+    if (!t) { endList(); out += '<br>'; continue; }
+
+    // Headings: # → bold-p (avoid h1-h6 size jumps inside bubbles)
+    const hm = t.match(/^(#{1,4}) (.+)/);
+    if (hm) {
+      endList();
+      const sz = ['16px','14px','13px','13px'][hm[1].length - 1] || '13px';
+      const mt = hm[1].length === 1 ? '12px' : '8px';
+      out += `<p style="font-weight:700;font-size:${sz};margin:${mt} 0 3px;color:var(--ink)">${inline(hm[2])}</p>`;
+      continue;
+    }
+
+    // Horizontal rule
+    if (/^-{3,}$/.test(t) || /^\*{3,}$/.test(t)) {
+      endList();
+      out += '<hr style="border:none;border-top:1px solid var(--border);margin:8px 0">';
+      continue;
+    }
+
+    // Unordered list
+    const ulm = t.match(/^[*\-+] (.+)/);
+    if (ulm) {
+      if (listType !== 'ul') { endList(); out += '<ul style="margin:4px 0 4px 16px;padding:0">'; listType = 'ul'; }
+      out += `<li style="margin-bottom:2px">${inline(ulm[1])}</li>`;
+      continue;
+    }
+
+    // Ordered list
+    const olm = t.match(/^\d+\. (.+)/);
+    if (olm) {
+      if (listType !== 'ol') { endList(); out += '<ol style="margin:4px 0 4px 16px;padding:0 0 0 18px">'; listType = 'ol'; }
+      out += `<li style="margin-bottom:2px">${inline(olm[1])}</li>`;
+      continue;
+    }
+
+    endList();
+    out += `<p style="margin:3px 0">${inline(t)}</p>`;
+  }
+
+  endList(); flushTable();
+  return out || '<p></p>';
+}
+
+function renderAgentMessage(text) {
+  // Chips are only ever added programmatically via appendChips().
+  // LLM text must never auto-generate clickable chips — too error-prone.
+  appendAgentBubble(mdToHtml(text));
+}
+
+// ── File upload ───────────────────────────────────────────────────────────────
+fileInput().addEventListener('change', async e => {
+  const files = Array.from(e.target.files || []);
+  for (const f of files) await uploadFile(f);
+  e.target.value = '';
+});
+
+async function uploadFile(file) {
+  if (!sessionId) { showError('Session not ready yet.'); return; }
+
+  isBusy = true;
+  sendBtn().disabled = true;
+
+  // User bubble
+  const userTurn = document.createElement('div');
+  userTurn.className = 'user-turn';
+  userTurn.innerHTML = `<div class="user-bubble">Uploading <strong>${escHtml(file.name)}</strong></div>`;
+  messagesEl().appendChild(userTurn);
+
+  // Upload progress (indeterminate)
+  const progTurn = document.createElement('div');
+  progTurn.className = 'agent-turn';
+  progTurn.innerHTML = `
+    <div class="agent-bubble" style="min-width:200px">
+      <p style="color:var(--ink-muted);font-size:12px">Parsing ${escHtml(file.name)}…</p>
+      <div class="upload-progress"><div class="upload-fill"></div></div>
+    </div>`;
+  messagesEl().appendChild(progTurn);
+  scrollBottom();
+
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch(`${API}/session/${sessionId}/upload`, {
+      method: 'POST',
+      body:   fd,
+    });
+    progTurn.remove();
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
+      appendAgentBubble(`<p>Upload failed: <strong>${escHtml(err.detail || 'Unknown error')}</strong></p>`);
+      return;
+    }
+    const data = await res.json();
+    const hasIssues = data.low_confidence_fields.length > 0 || data.parse_errors.length > 0;
+    const statusText = hasIssues
+      ? `Review ${data.low_confidence_fields.length || data.parse_errors.length} field${(data.low_confidence_fields.length + data.parse_errors.length) > 1 ? 's' : ''}`
+      : 'Parsed';
+    appendDocMessage(file.name, Math.round(data.overall_confidence * 100), statusText, data.doc_type, data.parse_errors);
+
+    const sidebarTag = hasIssues ? 'Review' : 'Parsed';
+    addDocToSidebar(file.name, sidebarTag);
+
+    // If there are issues, ask the API to follow up
+    if (hasIssues && data.low_confidence_fields.length > 0) {
+      await sendMessage(`I uploaded ${file.name}. Some fields need review: ${data.low_confidence_fields.slice(0,3).join(', ')}`);
+    } else {
+      // Advance graph for successful upload
+      await sendMessage(`I uploaded ${file.name} — it parsed cleanly.`);
+    }
+  } catch (e) {
+    progTurn.remove();
+    appendAgentBubble(`<p>Upload error: <strong>${escHtml(e.message)}</strong></p>`);
+  } finally {
+    isBusy = false;
+    sendBtn().disabled = msgInput().value.trim() === '';
+  }
+}
+
+// ── Drag & drop ───────────────────────────────────────────────────────────────
+const mainEl = document.querySelector('.main');
+
+mainEl.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropZoneEl().classList.add('dragover');
+});
+mainEl.addEventListener('dragleave', e => {
+  if (!mainEl.contains(e.relatedTarget)) {
+    dropZoneEl().classList.remove('dragover');
+  }
+});
+mainEl.addEventListener('drop', async e => {
+  e.preventDefault();
+  dropZoneEl().classList.remove('dragover');
+  const files = Array.from(e.dataTransfer.files);
+  for (const f of files) await uploadFile(f);
+});
+
+dropZoneEl().addEventListener('dragover', e => e.preventDefault());
+dropZoneEl().addEventListener('drop', async e => {
+  e.preventDefault();
+  e.stopPropagation();
+  dropZoneEl().classList.remove('dragover');
+  const files = Array.from(e.dataTransfer.files);
+  for (const f of files) await uploadFile(f);
+});
+
+// ── Option card actions ───────────────────────────────────────────────────────
+function digilockerClick() {
+  appendAgentBubble(`<p>DigiLocker / incometax.gov.in OAuth is coming in the next release. For now, upload your documents using the right card or the attach button below.</p>`);
+  scrollBottom();
+}
+
+function uploadClick() {
+  appendAgentBubble(`<p>Let's start with your documents. Drop your <strong>Form 16</strong>, Zerodha / Upstox P&amp;L statements, bank statements, or any other tax documents below. I support PDF, Excel, CSV, and images.</p>`);
+  scrollBottom();
+  document.getElementById('fileInput').click();
+}
+
+// ── Keyboard & textarea ───────────────────────────────────────────────────────
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    if (!sendBtn().disabled) handleSend();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 90) + 'px';
+  sendBtn().disabled = el.value.trim() === '' || isBusy;
+}
+
+// ── Utility ───────────────────────────────────────────────────────────────────
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ── New session ───────────────────────────────────────────────────────────────
+function newSession() {
+  if (sidebarPollId) clearInterval(sidebarPollId);
+  localStorage.removeItem('inditr_session_id');
+  location.reload();
+}
+
+// ── Toolbar button stubs ──────────────────────────────────────────────────────
+function insertForm() {
+  const forms = ['Form 16', 'Form 26AS', 'AIS', 'Zerodha P&L', 'Upstox P&L', 'Bank Statement'];
+  const tip = document.createElement('div');
+  tip.className = 'agent-turn';
+  const b = document.createElement('div');
+  b.className = 'agent-bubble';
+  b.innerHTML = `<p>Which form or document type would you like to add?</p>`;
+  const chips = document.createElement('div');
+  chips.className = 'chips';
+  forms.forEach(f => {
+    const btn = document.createElement('button');
+    btn.className = 'chip';
+    btn.textContent = f;
+    btn.onclick = () => {
+      chips.querySelectorAll('.chip').forEach(c => c.disabled = true);
+      msgInput().value = `I want to add my ${f}`;
+      msgInput().focus();
+      sendBtn().disabled = false;
+    };
+    chips.appendChild(btn);
+  });
+  b.appendChild(chips);
+  tip.appendChild(b);
+  messagesEl().appendChild(tip);
+  scrollBottom();
+}
+
+function showCommands() {
+  const cmds = [
+    { cmd: '/regime', desc: 'Compare old vs new tax regime' },
+    { cmd: '/checklist', desc: 'Show document checklist' },
+    { cmd: '/estimate', desc: 'Show current tax estimate' },
+    { cmd: '/reset', desc: 'Start over with a new session' },
+  ];
+  const turn = document.createElement('div');
+  turn.className = 'agent-turn';
+  const b = document.createElement('div');
+  b.className = 'agent-bubble';
+  b.innerHTML = `<p><strong>Available commands</strong></p>` +
+    cmds.map(c => `<p><code style="font-size:12px;background:var(--surface2);padding:1px 5px;border-radius:3px">${c.cmd}</code> — ${c.desc}</p>`).join('');
+  turn.appendChild(b);
+  messagesEl().appendChild(turn);
+  scrollBottom();
+}
+
+// Handle /commands typed in the box
+msgInput().addEventListener('keyup', e => {
+  const v = msgInput().value;
+  if (v === '/regime')    { msgInput().value = ''; sendMessage('Compare old and new tax regime for me'); }
+  if (v === '/checklist') { msgInput().value = ''; sendMessage('Show my document checklist'); }
+  if (v === '/estimate')  { msgInput().value = ''; sendMessage('Show my current tax estimate'); }
+  if (v === '/reset')     { newSession(); }
+});
+</script>
+</body>
+</html>
+
+// ── New session ───────────────────────────────────────────────────────────────
+function newSession() {
+  if (!confirm('Start a new session? The current session will be saved but you will begin fresh.')) return;
+  sessionId = null;
+  isBusy = false;
+  if (sidebarPollId) { clearInterval(sidebarPollId); sidebarPollId = null; }
+  messagesEl().innerHTML = '';
+  docSidebar().innerHTML = '';
+  document.getElementById('docCount').textContent = '0';
+  document.getElementById('downloadSection').style.display = 'none';
+  estimateArea().innerHTML = '<div class="estimate-placeholder">Calculating after you share your data…</div>';
+  footerStatus().textContent = 'Session saved automatically';
+  // Reset checklist
+  currentAct = null;
+  updateChecklistFromAct(null);
+  // Show welcome screen
+  appendAgentBubble(`
+    <div class="welcome-grid">
+      <div class="wg-hero">
+        <div class="wg-logo">i</div>
+        <div class="wg-tagline">IndITR — Indian Tax Filing Agent</div>
+        <div class="wg-sub">AY 2026-27 · ITR-1 &amp; ITR-2 · Both regimes</div>
+      </div>
+    </div>
+    <p style="margin:12px 0 4px">Ready to start your new tax filing session.</p>
+    <p style="margin:0;color:#666;font-size:13px">Type a message or click below to begin.</p>
+  `, true);
+  appendChips(['Start filing my ITR', 'I have a question first'], async (opt) => {
+    appendUserBubble(opt);
+    await sendMessage(opt);
+  });
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  updateChecklistFromAct(null);
+});
+</script>
+</body>
+</html>
+kground:#f0f2f5;padding:2px 5px;border-radius:3px">${c.cmd}</code> — ${c.desc}</p>`
+  ).join('');
+  messagesEl().appendChild(turn);
+  scrollBottom();
+}
+
+// ── New session ────────────────────────────────────────────────────────────────────
+function newSession() {
+  if (!confirm('Start a new session? The current session will be saved but you will begin fresh.')) return;
+  sessionId = null;
+  isBusy = false;
+  if (sidebarPollId) { clearInterval(sidebarPollId); sidebarPollId = null; }
+  messagesEl().innerHTML = '';
+  docSidebar().innerHTML = '';
+  document.getElementById('docCount').textContent = '0';
+  document.getElementById('downloadSection').style.display = 'none';
+  estimateArea().innerHTML = '<div class="estimate-placeholder">Calculating after you share your data…</div>';
+  footerStatus().textContent = 'Session saved automatically';
+  currentAct = null;
+  updateChecklistFromAct(null);
+  appendAgentBubble(`
+    <div class="welcome-grid">
+      <div class="wg-hero">
+        <div class="wg-logo">i</div>
+        <div class="wg-tagline">IndITR — Indian Tax Filing Agent</div>
+        <div class="wg-sub">AY 2026-27 · ITR-1 &amp; ITR-2 · Both regimes</div>
+      </div>
+    </div>
+    <p style="margin:12px 0 4px">Ready to start a new filing session.</p>
+    <p style="margin:0;color:#666;font-size:13px">Type a message or click below.</p>
+  `, true);
+  appendChips(['Start filing my ITR', 'I have a question first'], async (opt) => {
+    appendUserBubble(opt);
+    await sendMessage(opt);
+  });
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  updateChecklistFromAct(null);
+});
+</script>
+</body>
+</html>

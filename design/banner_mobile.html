@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>IndITR Mobile Banner</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:          #f0eee9;
+    --surface:     #ffffff;
+    --surface2:    #f7f6f2;
+    --border:      #e6e3dc;
+    --border-soft: #eeece7;
+    --ink:         #0e0f0c;
+    --ink-mid:     #3a3b38;
+    --ink-dim:     #6b6b67;
+    --ink-muted:   #9e9e9a;
+    --green:       #1b5e3f;
+    --green-bg:    #edf5f0;
+    --green-border:#b6d9c7;
+    --r-xs: 5px;
+    --r-lg: 18px;
+    --shadow-sm: 0 1px 3px rgba(14,15,12,0.07), 0 2px 8px rgba(14,15,12,0.04);
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .banner {
+    width: 390px;
+    height: 844px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 44px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* topbar */
+  .topbar {
+    display: flex;
+    align-items: center;
+    height: 44px;
+    padding: 0 18px;
+    margin-top: 44px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    gap: 8px;
+  }
+  .logo-mark {
+    width: 24px; height: 24px;
+    background: var(--ink);
+    border-radius: var(--r-xs);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 12px; font-weight: 700; font-style: italic;
+    letter-spacing: -0.5px; flex-shrink: 0;
+  }
+  .logo-name { font-size: 13px; font-weight: 700; color: var(--ink); letter-spacing: -0.3px; }
+  .logo-ay   { font-size: 10px; color: var(--ink-muted); font-weight: 500; }
+
+  /* hero */
+  .hero {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 28px 48px;
+  }
+
+  .hero-title {
+    font-size: 44px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -2px;
+    line-height: 1;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .i-mark {
+    width: 40px; height: 40px;
+    background: var(--ink);
+    border-radius: var(--r-xs);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 24px; font-weight: 700; font-style: italic;
+    letter-spacing: -1px;
+  }
+
+  .hero-sub {
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin-bottom: 36px;
+  }
+
+  /* features — stacked vertically for mobile */
+  .features {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+  }
+
+  .feat {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 14px 0;
+    border-top: 1px solid var(--border-soft);
+  }
+
+  .feat-title {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.3;
+  }
+
+  .feat-desc {
+    font-size: 11px;
+    color: var(--ink-muted);
+    line-height: 1.5;
+  }
+
+  /* bottom bar */
+  .bottom {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    height: 44px;
+    padding: 0 18px 0;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .ae-branding {
+    font-size: 10px;
+    color: var(--ink-muted);
+    font-style: italic;
+  }
+  .ae-branding span { font-weight: 600; font-style: normal; color: var(--ink-dim); }
+
+  /* home indicator */
+  .home-indicator {
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: var(--surface);
+  }
+  .home-bar {
+    width: 120px; height: 4px;
+    background: var(--ink);
+    border-radius: 2px;
+    opacity: 0.15;
+  }
+</style>
+</head>
+<body>
+<div class="banner">
+  <div class="topbar">
+    <div class="logo-mark">i</div>
+    <span class="logo-name">inditr</span>
+    <span class="logo-ay">AY 2026-27</span>
+  </div>
+
+  <div class="hero">
+    <div class="hero-title">
+      <div class="i-mark">i</div>
+      ndITR
+    </div>
+    <div class="hero-sub">Indian income tax filing agent</div>
+
+    <div class="features">
+      <div class="feat">
+        <div class="feat-title">Zero-LLM tax engine</div>
+        <div class="feat-desc">Pure Python slabs, 87A rebate, LTCG exemptions, surcharge — deterministic every time.</div>
+      </div>
+      <div class="feat">
+        <div class="feat-title">Smart document parsing</div>
+        <div class="feat-desc">Form 16, Zerodha P&L, bank statements. Confidence-gated with automatic fallback.</div>
+      </div>
+      <div class="feat">
+        <div class="feat-title">Exact regime comparison</div>
+        <div class="feat-desc">Both regimes with your deductions. What-if for 80C, NPS, 54EC — engine-backed.</div>
+      </div>
+      <div class="feat">
+        <div class="feat-title">Filing-ready exports</div>
+        <div class="feat-desc">IT Dept AY 2026-27 JSON for offline utility. PDF with pre-filled portal walkthrough.</div>
+      </div>
+      <div class="feat">
+        <div class="feat-title">BYOLLM — run free locally</div>
+        <div class="feat-desc">Ollama on CPU, or any OpenAI-compatible endpoint. One env var to switch.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="ae-branding">Adequately Engineered by <span>Venky</span></div>
+  </div>
+
+  <div class="home-indicator">
+    <div class="home-bar"></div>
+  </div>
+
+</div>
+</body>
+</html>
