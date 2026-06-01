@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "inditr"
+version = "0.1.0"
+description = "Indian Tax Filing Agent — AY 2026-27"
+requires-python = ">=3.11"
+dependencies = [
+    "langgraph>=0.2",
+    "pydantic>=2.7",
+    "litellm",
+    "pdfplumber>=0.11",
+    "pdf2image",
+    "reportlab>=4.0",
+    "fastapi>=0.111",
+    "uvicorn",
+    "jsonschema>=4.22",
+    "python-dotenv",
+    "python-multipart",
+    "typing_extensions>=4.9",
+    # RAG
+    "zvec>=0.1",
+    "sentence-transformers>=3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["inditr*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+markers = [
+    "slow: LLM integration tests requiring a live API key (deselect with -m 'not slow')",
+]
